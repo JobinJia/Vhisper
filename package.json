@@ -1,0 +1,25 @@
+{
+  "name": "vhisper",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "type-check": "vue-tsc --noEmit",
+    "tauri": "tauri dev"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.3.1",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.6",
+    "vue-tsc": "^2.2.0"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.2.0",
+    "@tauri-apps/plugin-shell": "^2.2.0",
+    "vue": "3.5.12"
+  }
+}
