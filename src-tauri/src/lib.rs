@@ -112,6 +112,7 @@ pub fn run() {
             commands::config::save_config,
             commands::audio::start_recording,
             commands::audio::stop_recording,
+            commands::test::test_qwen_api,
             commands::test::test_dashscope_api,
             commands::test::test_openai_api,
             commands::test::test_funasr_api,

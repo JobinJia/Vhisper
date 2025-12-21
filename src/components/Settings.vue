@@ -6,7 +6,9 @@ type TabType = 'asr' | 'llm' | 'hotkey';
 const activeTab = ref<TabType>('asr');
 
 // ASR 配置
-const asrProvider = ref('DashScope');
+const asrProvider = ref('Qwen');
+const qwenApiKey = ref('');
+const qwenModel = ref('qwen3-asr-flash-realtime');
 const dashscopeApiKey = ref('');
 const dashscopeModel = ref('paraformer-realtime-v2');
 const openaiAsrApiKey = ref('');
@@ -26,6 +28,7 @@ const ollamaModel = ref('qwen3:8b');
 const triggerKey = ref('Alt');
 
 // 测试状态
+const testingQwen = ref(false);
 const testingDashscope = ref(false);
 const testingOpenai = ref(false);
 const testingFunasr = ref(false);
@@ -35,6 +38,23 @@ const testResult = ref<{ success: boolean; message: string } | null>(null);
 // 保存状态
 const saving = ref(false);
 const saveMessage = ref<{ success: boolean; message: string } | null>(null);
+
+async function testQwenApi() {
+  if (!qwenApiKey.value) {
+    testResult.value = { success: false, message: 'API Key 不能为空' };
+    return;
+  }
+  testingQwen.value = true;
+  testResult.value = null;
+  try {
+    const result = await invoke<string>('test_qwen_api', { apiKey: qwenApiKey.value });
+    testResult.value = { success: true, message: result };
+  } catch (e) {
+    testResult.value = { success: false, message: e as string };
+  } finally {
+    testingQwen.value = false;
+  }
+}
 
 async function testDashscopeApi() {
   if (!dashscopeApiKey.value) {
@@ -113,7 +133,9 @@ async function loadConfig() {
     const config = await invoke<any>('get_config');
     if (config) {
       // 加载 ASR 配置
-      asrProvider.value = config.asr?.provider || 'DashScope';
+      asrProvider.value = config.asr?.provider || 'Qwen';
+      qwenApiKey.value = config.asr?.qwen?.api_key || '';
+      qwenModel.value = config.asr?.qwen?.model || 'qwen3-asr-flash-realtime';
       dashscopeApiKey.value = config.asr?.dashscope?.api_key || '';
       dashscopeModel.value = config.asr?.dashscope?.model || 'paraformer-realtime-v2';
       openaiAsrApiKey.value = config.asr?.openai?.api_key || '';
@@ -163,7 +185,12 @@ async function saveConfig() {
     };
 
     // ASR 配置
-    if (asrProvider.value === 'DashScope') {
+    if (asrProvider.value === 'Qwen') {
+      config.asr.qwen = {
+        api_key: qwenApiKey.value,
+        model: qwenModel.value,
+      };
+    } else if (asrProvider.value === 'DashScope') {
       config.asr.dashscope = {
         api_key: dashscopeApiKey.value,
         model: dashscopeModel.value,
@@ -248,11 +275,49 @@ onMounted(() => {
           <div class="form-group">
             <label for="asr-provider">ASR 服务商</label>
             <select id="asr-provider" v-model="asrProvider">
-              <option value="DashScope">阿里云 DashScope</option>
+              <option value="Qwen">通义千问 (推荐，中英混合更准)</option>
+              <option value="DashScope">阿里云 Paraformer</option>
               <option value="OpenAIWhisper">OpenAI Whisper</option>
               <option value="FunAsr">FunASR (本地)</option>
             </select>
           </div>
+
+          <!-- 通义千问 -->
+          <template v-if="asrProvider === 'Qwen'">
+            <div class="form-group">
+              <label for="qwen-api-key">API Key</label>
+              <div class="input-with-button">
+                <input
+                  type="password"
+                  id="qwen-api-key"
+                  v-model="qwenApiKey"
+                  placeholder="sk-..."
+                />
+                <button
+                  class="btn-test"
+                  @click="testQwenApi"
+                  :disabled="testingQwen"
+                >
+                  {{ testingQwen ? '测试中...' : '测试' }}
+                </button>
+              </div>
+              <p class="hint">从阿里云百炼控制台获取 API Key</p>
+              <p
+                v-if="testResult && asrProvider === 'Qwen'"
+                class="test-result"
+                :class="{ success: testResult.success, error: !testResult.success }"
+              >
+                {{ testResult.message }}
+              </p>
+            </div>
+            <div class="form-group">
+              <label for="qwen-model">模型</label>
+              <select id="qwen-model" v-model="qwenModel">
+                <option value="qwen3-asr-flash-realtime">qwen3-asr-flash-realtime (推荐)</option>
+              </select>
+              <p class="hint">支持 30+ 语言，中英混合识别更准确</p>
+            </div>
+          </template>
 
           <!-- DashScope -->
           <template v-if="asrProvider === 'DashScope'">

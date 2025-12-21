@@ -58,13 +58,15 @@ pub struct AsrConfig {
     #[serde(default)]
     pub dashscope: Option<DashScopeAsrConfig>,
     #[serde(default)]
+    pub qwen: Option<QwenAsrConfig>,
+    #[serde(default)]
     pub openai: Option<OpenAiAsrConfig>,
     #[serde(default)]
     pub funasr: Option<FunAsrConfig>,
 }
 
 fn default_asr_provider() -> String {
-    "DashScope".to_string()
+    "Qwen".to_string()
 }
 
 impl Default for AsrConfig {
@@ -72,6 +74,7 @@ impl Default for AsrConfig {
         Self {
             provider: default_asr_provider(),
             dashscope: None,
+            qwen: None,
             openai: None,
             funasr: None,
         }
@@ -88,6 +91,18 @@ pub struct DashScopeAsrConfig {
 
 fn default_dashscope_model() -> String {
     "paraformer-realtime-v2".to_string()
+}
+
+/// 通义千问 ASR 配置
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QwenAsrConfig {
+    pub api_key: String,
+    #[serde(default = "default_qwen_asr_model")]
+    pub model: String,
+}
+
+fn default_qwen_asr_model() -> String {
+    "qwen3-asr-flash-realtime".to_string()
 }
 
 /// OpenAI ASR 配置

@@ -8,6 +8,7 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "type-check": "vue-tsc --noEmit",
+    "start": "tauri dev",
     "tauri": "tauri",
     "release": "bumpp -r --no-push"
   },

@@ -1,11 +1,13 @@
 mod dashscope;
 mod funasr;
 mod openai_whisper;
+mod qwen;
 mod traits;
 
 pub use dashscope::DashScopeAsr;
 pub use funasr::FunAsr;
 pub use openai_whisper::OpenAiWhisper;
+pub use qwen::QwenAsr;
 pub use traits::{AsrError, AsrResult, AsrService};
 
 use crate::config::settings::AsrConfig;
@@ -13,6 +15,16 @@ use crate::config::settings::AsrConfig;
 /// 根据配置创建 ASR 服务
 pub fn create_asr_service(config: &AsrConfig) -> Result<Box<dyn AsrService>, AsrError> {
     match config.provider.as_str() {
+        "Qwen" => {
+            let qwen_config = config
+                .qwen
+                .as_ref()
+                .ok_or_else(|| AsrError::Config("通义千问 ASR 配置缺失".to_string()))?;
+            Ok(Box::new(QwenAsr::new(
+                qwen_config.api_key.clone(),
+                qwen_config.model.clone(),
+            )))
+        }
         "DashScope" => {
             let dashscope_config = config
                 .dashscope
@@ -46,6 +58,11 @@ pub fn create_asr_service(config: &AsrConfig) -> Result<Box<dyn AsrService>, Asr
             config.provider
         ))),
     }
+}
+
+/// 测试通义千问 ASR API
+pub async fn test_qwen_api(api_key: &str) -> Result<String, AsrError> {
+    qwen::test_api(api_key).await
 }
 
 /// 测试 DashScope API
