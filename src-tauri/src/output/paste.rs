@@ -14,28 +14,36 @@ pub fn simulate_paste(delay_ms: u64) -> Result<(), PasteError> {
     thread::sleep(Duration::from_millis(delay_ms));
     tracing::info!("simulate_paste: sleep done");
 
-    // 在 macOS 上使用 AppleScript 执行粘贴，避免 enigo 与 IMK 的冲突
     #[cfg(target_os = "macos")]
     {
-        tracing::info!("simulate_paste: using AppleScript for paste");
-        let output = std::process::Command::new("osascript")
-            .args([
-                "-e",
-                "tell application \"System Events\" to keystroke \"v\" using command down",
-            ])
-            .output()
-            .map_err(|e| {
-                tracing::error!("simulate_paste: osascript failed: {}", e);
-                PasteError::Paste(e.to_string())
-            })?;
+        use core_graphics::event::{CGEvent, CGEventFlags, CGKeyCode};
+        use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
 
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            tracing::error!("simulate_paste: AppleScript error: {}", stderr);
-            return Err(PasteError::Paste(format!("AppleScript error: {}", stderr)));
-        }
+        tracing::info!("simulate_paste: using CGEvent for paste");
 
-        tracing::info!("simulate_paste: AppleScript paste successful");
+        // 创建事件源
+        let source = CGEventSource::new(CGEventSourceStateID::HIDSystemState)
+            .map_err(|_| PasteError::Paste("Failed to create CGEventSource".to_string()))?;
+
+        // 'v' 键的虚拟键码是 9
+        const KEY_V: CGKeyCode = 9;
+
+        // 创建按下 Cmd+V 事件
+        let key_down = CGEvent::new_keyboard_event(source.clone(), KEY_V, true)
+            .map_err(|_| PasteError::Paste("Failed to create key down event".to_string()))?;
+        key_down.set_flags(CGEventFlags::CGEventFlagCommand);
+
+        // 创建释放 Cmd+V 事件
+        let key_up = CGEvent::new_keyboard_event(source, KEY_V, false)
+            .map_err(|_| PasteError::Paste("Failed to create key up event".to_string()))?;
+        key_up.set_flags(CGEventFlags::CGEventFlagCommand);
+
+        // 发送事件
+        key_down.post(core_graphics::event::CGEventTapLocation::HID);
+        thread::sleep(Duration::from_millis(10));
+        key_up.post(core_graphics::event::CGEventTapLocation::HID);
+
+        tracing::info!("simulate_paste: CGEvent paste successful");
     }
 
     #[cfg(target_os = "windows")]
