@@ -2,8 +2,18 @@
 import { ref, computed, onMounted } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 
-type TabType = 'asr' | 'llm' | 'hotkey';
+type TabType = 'asr' | 'llm' | 'hotkey' | 'permissions';
 const activeTab = ref<TabType>('asr');
+
+// Permission status
+type PermissionState = 'Granted' | 'Denied' | 'NotDetermined' | 'Restricted' | 'NotApplicable';
+interface PermissionStatus {
+  accessibility: boolean;
+  microphone: PermissionState;
+}
+const permissionStatus = ref<PermissionStatus | null>(null);
+const checkingPermissions = ref(false);
+const requestingMicrophone = ref(false);
 
 // ASR 配置
 const asrProvider = ref('Qwen');
@@ -249,6 +259,55 @@ async function testOllamaApi() {
   }
 }
 
+// Permission functions
+async function checkPermissions() {
+  checkingPermissions.value = true;
+  try {
+    const status = await invoke<PermissionStatus>('check_permissions');
+    permissionStatus.value = status;
+  } catch (e) {
+    console.error('Failed to check permissions:', e);
+  } finally {
+    checkingPermissions.value = false;
+  }
+}
+
+async function requestMicrophonePermission() {
+  requestingMicrophone.value = true;
+  try {
+    await invoke<boolean>('request_microphone_permission');
+    // Re-check permissions after requesting
+    await checkPermissions();
+  } catch (e) {
+    console.error('Failed to request microphone permission:', e);
+  } finally {
+    requestingMicrophone.value = false;
+  }
+}
+
+async function openAccessibilitySettings() {
+  try {
+    await invoke('open_accessibility_settings');
+  } catch (e) {
+    console.error('Failed to open accessibility settings:', e);
+  }
+}
+
+async function openMicrophoneSettings() {
+  try {
+    await invoke('open_microphone_settings');
+  } catch (e) {
+    console.error('Failed to open microphone settings:', e);
+  }
+}
+
+// Check if any permission is missing
+const hasPermissionIssue = computed(() => {
+  if (!permissionStatus.value) return false;
+  return !permissionStatus.value.accessibility ||
+    (permissionStatus.value.microphone !== 'Granted' && permissionStatus.value.microphone !== 'NotApplicable');
+});
+
 async function loadConfig() {
   try {
     const config = await invoke<any>('get_config');
@@ -382,6 +441,7 @@ async function saveConfig() {
 
 onMounted(() => {
   loadConfig();
+  checkPermissions();
 });
 </script>
 
@@ -402,10 +462,24 @@ onMounted(() => {
           <span class="nav-icon">⌨️</span>
           快捷键
         </button>
+        <button :class="{ active: activeTab === 'permissions', warning: hasPermissionIssue }" @click="activeTab = 'permissions'">
+          <span class="nav-icon">🔐</span>
+          权限
+          <span v-if="hasPermissionIssue" class="warning-dot"></span>
+        </button>
       </nav>
     </div>
 
     <div class="main">
+      <!-- Permission Warning Banner -->
+      <div v-if="hasPermissionIssue" class="permission-banner" @click="activeTab = 'permissions'">
+        <span class="banner-icon">⚠️</span>
+        <span class="banner-text">
+          部分系统权限未授权，可能影响应用功能。
+          <a href="#" @click.prevent="activeTab = 'permissions'">点击查看</a>
+        </span>
+      </div>
+
       <div class="content">
         <!-- ASR Tab -->
         <template v-if="activeTab === 'asr'">
@@ -683,6 +757,13 @@ onMounted(() => {
         <template v-else-if="activeTab === 'hotkey'">
           <h2>快捷键设置</h2>
 
+          <!-- Accessibility warning -->
+          <div v-if="permissionStatus && !permissionStatus.accessibility" class="inline-warning">
+            <span class="warning-icon">⚠️</span>
+            <span>需要辅助功能权限才能使用全局快捷键。</span>
+            <button class="btn-link" @click="openAccessibilitySettings">打开设置</button>
+          </div>
+
           <div class="form-group">
             <label>触发键</label>
             <div class="hotkey-input-container">
@@ -724,6 +805,90 @@ onMounted(() => {
           </div>
 
           <p class="hint">按住此键开始录音，松开后进行语音识别并输出文字</p>
+        </template>
+
+        <!-- Permissions Tab -->
+        <template v-else-if="activeTab === 'permissions'">
+          <h2>系统权限</h2>
+          <p class="hint" style="margin-bottom: 1.5rem;">
+            Vhisper 需要以下系统权限才能正常工作。
+          </p>
+
+          <!-- Accessibility Permission -->
+          <div class="permission-item">
+            <div class="permission-header">
+              <div class="permission-info">
+                <span class="permission-name">辅助功能</span>
+                <span class="permission-desc">用于监听全局快捷键</span>
+              </div>
+              <div class="permission-status">
+                <span v-if="permissionStatus?.accessibility" class="status-granted">✓ 已授权</span>
+                <span v-else class="status-denied">✗ 未授权</span>
+              </div>
+            </div>
+            <div class="permission-actions">
+              <button
+                v-if="!permissionStatus?.accessibility"
+                class="btn-secondary"
+                @click="openAccessibilitySettings"
+              >
+                打开系统设置
+              </button>
+              <button
+                class="btn-secondary"
+                @click="checkPermissions"
+                :disabled="checkingPermissions"
+              >
+                {{ checkingPermissions ? '检查中...' : '刷新状态' }}
+              </button>
+            </div>
+            <p class="permission-hint">
+              在系统设置中找到 Vhisper 并勾选启用。
+            </p>
+          </div>
+
+          <!-- Microphone Permission -->
+          <div class="permission-item">
+            <div class="permission-header">
+              <div class="permission-info">
+                <span class="permission-name">麦克风</span>
+                <span class="permission-desc">用于录制语音</span>
+              </div>
+              <div class="permission-status">
+                <span v-if="permissionStatus?.microphone === 'Granted'" class="status-granted">✓ 已授权</span>
+                <span v-else-if="permissionStatus?.microphone === 'NotApplicable'" class="status-na">- 不适用</span>
+                <span v-else-if="permissionStatus?.microphone === 'NotDetermined'" class="status-pending">? 未请求</span>
+                <span v-else class="status-denied">✗ 已拒绝</span>
+              </div>
+            </div>
+            <div class="permission-actions">
+              <button
+                v-if="permissionStatus?.microphone === 'NotDetermined'"
+                class="btn-secondary"
+                @click="requestMicrophonePermission"
+                :disabled="requestingMicrophone"
+              >
+                {{ requestingMicrophone ? '请求中...' : '请求授权' }}
+              </button>
+              <button
+                v-else-if="permissionStatus?.microphone === 'Denied'"
+                class="btn-secondary"
+                @click="openMicrophoneSettings"
+              >
+                打开系统设置
+              </button>
+              <button
+                class="btn-secondary"
+                @click="checkPermissions"
+                :disabled="checkingPermissions"
+              >
+                {{ checkingPermissions ? '检查中...' : '刷新状态' }}
+              </button>
+            </div>
+            <p class="permission-hint">
+              首次使用时会弹出系统授权对话框。
+            </p>
+          </div>
         </template>
       </div>
 
@@ -1042,6 +1207,203 @@ select:focus {
   .save-message.error {
     background: #4a1c1c;
     color: #f5a5a5;
+  }
+}
+
+/* Permission banner styles */
+.permission-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #fff3cd;
+  border-bottom: 1px solid #ffc107;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.permission-banner:hover {
+  background: #ffe8a1;
+}
+
+.banner-icon {
+  font-size: 1rem;
+}
+
+.banner-text {
+  font-size: 0.9rem;
+  color: #856404;
+}
+
+.banner-text a {
+  color: #533f03;
+  font-weight: 500;
+}
+
+/* Warning dot for nav button */
+.nav button.warning {
+  position: relative;
+}
+
+.warning-dot {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 8px;
+  height: 8px;
+  background: #dc3545;
+  border-radius: 50%;
+}
+
+/* Inline warning styles */
+.inline-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #856404;
+}
+
+.warning-icon {
+  font-size: 1rem;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #533f03;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  margin-left: auto;
+}
+
+.btn-link:hover {
+  color: #3d2e02;
+}
+
+/* Permission item styles */
+.permission-item {
+  padding: 1rem;
+  background: var(--input-bg, #fff);
+  border: 1px solid var(--input-border, #ddd);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.permission-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.permission-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.permission-name {
+  font-weight: 600;
+  color: var(--text-color, #333);
+}
+
+.permission-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #666);
+}
+
+.permission-status {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.status-granted {
+  color: #28a745;
+}
+
+.status-denied {
+  color: #dc3545;
+}
+
+.status-pending {
+  color: #ffc107;
+}
+
+.status-na {
+  color: var(--text-secondary, #666);
+}
+
+.permission-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  background: var(--btn-secondary-bg, #f0f0f0);
+  border: 1px solid var(--input-border, #ddd);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-color, #333);
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--btn-secondary-hover, #e0e0e0);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.permission-hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #888);
+  margin: 0;
+}
+
+/* Dark mode for permission styles */
+@media (prefers-color-scheme: dark) {
+  .permission-banner {
+    background: #3d3200;
+    border-color: #665500;
+  }
+
+  .permission-banner:hover {
+    background: #4d4000;
+  }
+
+  .banner-text {
+    color: #ffd666;
+  }
+
+  .banner-text a {
+    color: #ffe699;
+  }
+
+  .inline-warning {
+    background: #3d3200;
+    border-color: #665500;
+    color: #ffd666;
+  }
+
+  .btn-link {
+    color: #ffe699;
+  }
+
+  .btn-link:hover {
+    color: #fff0b3;
   }
 }
 </style>

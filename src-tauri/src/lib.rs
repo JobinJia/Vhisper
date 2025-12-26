@@ -5,6 +5,7 @@ pub mod config;
 pub mod hotkey;
 pub mod llm;
 pub mod output;
+pub mod permissions;
 pub mod pipeline;
 pub mod tray;
 
@@ -118,6 +119,10 @@ pub fn run() {
             commands::test::test_openai_api,
             commands::test::test_funasr_api,
             commands::test::test_ollama_api,
+            commands::permissions::check_permissions,
+            commands::permissions::request_microphone_permission,
+            commands::permissions::open_accessibility_settings,
+            commands::permissions::open_microphone_settings,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
