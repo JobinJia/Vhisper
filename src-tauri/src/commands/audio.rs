@@ -1,5 +1,6 @@
 use tauri::{AppHandle, Emitter, State};
 
+use crate::output;
 use crate::{get_pipeline, AppState};
 
 /// 开始录音
@@ -38,8 +39,20 @@ pub async fn stop_recording(
     let _ = app.emit("recording-stopped", ());
 
     if let Some(pipeline) = get_pipeline() {
-        match pipeline.stop_and_process(None).await {
-            Ok(_) => {
+        let config = state.config.read().await;
+        match pipeline.stop_and_process().await {
+            Ok(text) => {
+                // 输出文本到当前应用
+                if !text.is_empty() {
+                    if let Err(e) = output::output_text(
+                        &text,
+                        config.output.restore_clipboard,
+                        config.output.paste_delay_ms,
+                        None,
+                    ) {
+                        tracing::error!("Text output failed: {}", e);
+                    }
+                }
                 let _ = app.emit("processing-complete", ());
                 tracing::info!("Recording processed via command");
             }

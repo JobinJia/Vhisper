@@ -8,7 +8,7 @@ use std::sync::OnceLock;
 use tauri::AppHandle;
 use tokio::sync::mpsc;
 
-use crate::config::settings::HotkeyBinding;
+use vhisper_core::HotkeyBinding;
 
 #[derive(Debug, thiserror::Error)]
 pub enum HotkeyError {

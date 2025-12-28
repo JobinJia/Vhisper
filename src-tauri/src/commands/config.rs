@@ -1,8 +1,7 @@
 use tauri::State;
 
-use crate::config::{self, AppConfig};
 use crate::hotkey;
-use crate::AppState;
+use crate::{AppConfig, AppState};
 
 /// 获取当前配置
 #[tauri::command]
@@ -15,7 +14,7 @@ pub async fn get_config(state: State<'_, AppState>) -> Result<AppConfig, String>
 #[tauri::command]
 pub async fn save_config(state: State<'_, AppState>, config: AppConfig) -> Result<(), String> {
     // 保存到文件
-    config::storage::save_config(&config).map_err(|e| e.to_string())?;
+    vhisper_core::save_config(&config).map_err(|e| e.to_string())?;
 
     // 获取新的快捷键绑定
     let new_binding = config.hotkey.binding.clone();

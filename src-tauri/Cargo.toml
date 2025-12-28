@@ -1,3 +1,6 @@
+[workspace]
+members = ["crates/vhisper-core"]
+
 [package]
 name = "vhisper"
 version = "1.0.7-beta.1"
@@ -15,6 +18,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+vhisper-core = { path = "crates/vhisper-core" }
 tauri = { version = "2", features = ["tray-icon", "macos-private-api"] }
 tauri-plugin-shell = "2.3"
 tokio = { version = "1", features = ["full"] }
@@ -23,32 +27,16 @@ serde_json = "1"
 thiserror = "2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-async-trait = "0.1"
-
-# 音频
-cpal = "0.16"
-hound = "3.5"
 
 # 图像处理
 png = "0.17"
 
+# 音频 (用于权限检测)
+cpal = "0.16"
+
 # 输入输出
 enigo = { version = "0.2", features = ["serde"] }
 arboard = "3.6"
-
-# HTTP 客户端
-reqwest = { version = "0.12", features = ["json", "multipart"] }
-
-# WebSocket 客户端 (阿里云实时语音识别)
-tokio-tungstenite = { version = "0.28", features = ["native-tls"] }
-native-tls = "0.2"
-futures-util = "0.3"
-uuid = { version = "1", features = ["v4"] }
-http = "1"
-
-# 本地配置存储
-dirs = "5"
-base64 = "0.22.1"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 core-graphics = "0.24"

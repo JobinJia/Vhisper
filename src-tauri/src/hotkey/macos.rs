@@ -6,11 +6,12 @@ use core_foundation::runloop::{kCFRunLoopCommonModes, kCFRunLoopDefaultMode, CFR
 use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::sync::mpsc::{Receiver, TryRecvError};
 use std::sync::Arc;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 
-use crate::config::settings::{HotkeyBinding, KeyCode};
+use vhisper_core::{HotkeyBinding, KeyCode};
 use crate::get_pipeline;
-use crate::output::get_frontmost_app_pid;
+use crate::output::{self, get_frontmost_app_pid};
+use crate::AppState;
 
 #[derive(Debug, thiserror::Error)]
 pub enum HotkeyError {
@@ -360,14 +361,32 @@ fn stop_recording(app_handle: &AppHandle, original_app_pid: Option<i32>) {
     if let Some(pipeline) = get_pipeline() {
         let app_handle_clone = app_handle.clone();
 
+        // 获取配置
+        let state = app_handle.state::<AppState>();
+        let config = state.config.clone();
+
         // 获取 tauri async runtime 的 handle，然后在其上 spawn 任务
         tracing::info!("Spawning async task for stop_and_process");
         let handle = tauri::async_runtime::handle();
         handle.spawn(async move {
             tracing::info!("Async task started");
-            match pipeline.stop_and_process(original_app_pid).await {
+            match pipeline.stop_and_process().await {
                 Ok(text) => {
                     tracing::info!("Processing completed successfully, text: {}", text);
+
+                    // 输出文本到当前应用
+                    if !text.is_empty() {
+                        let cfg = config.read().await;
+                        if let Err(e) = output::output_text(
+                            &text,
+                            cfg.output.restore_clipboard,
+                            cfg.output.paste_delay_ms,
+                            original_app_pid,
+                        ) {
+                            tracing::error!("Text output failed: {}", e);
+                        }
+                    }
+
                     let _ = app_handle_clone.emit("processing-complete", ());
                 }
                 Err(e) => {

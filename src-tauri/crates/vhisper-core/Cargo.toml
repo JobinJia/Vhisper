@@ -1,0 +1,31 @@
+[package]
+name = "vhisper-core"
+version = "0.1.0"
+edition = "2021"
+description = "Vhisper core library - ASR, LLM, Audio processing"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tracing = "0.1"
+async-trait = "0.1"
+
+# 音频
+cpal = "0.16"
+hound = "3.5"
+
+# HTTP 客户端
+reqwest = { version = "0.12", features = ["json", "multipart"] }
+
+# WebSocket 客户端 (阿里云实时语音识别)
+tokio-tungstenite = { version = "0.28", features = ["native-tls"] }
+native-tls = "0.2"
+futures-util = "0.3"
+uuid = { version = "1", features = ["v4"] }
+http = "1"
+
+# 本地配置存储
+dirs = "5"
+base64 = "0.22.1"

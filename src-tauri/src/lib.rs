@@ -1,20 +1,15 @@
-pub mod audio;
-pub mod asr;
 pub mod commands;
-pub mod config;
 pub mod hotkey;
-pub mod llm;
 pub mod output;
 pub mod permissions;
-pub mod pipeline;
 pub mod tray;
 
 use std::sync::{Arc, OnceLock};
 use tauri::{Manager, RunEvent, WindowEvent};
 use tokio::sync::RwLock;
 
-pub use config::settings::AppConfig;
-pub use pipeline::VoicePipeline;
+// 从 vhisper-core 导入
+pub use vhisper_core::{AppConfig, VoicePipeline};
 
 /// 全局 Pipeline 实例
 static VOICE_PIPELINE: OnceLock<Arc<VoicePipeline>> = OnceLock::new();
@@ -64,7 +59,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .setup(move |app| {
             // 加载配置
-            let config = config::storage::load_config()
+            let config = vhisper_core::load_config()
                 .unwrap_or_else(|_| AppConfig::default());
 
             let config_arc = Arc::new(RwLock::new(config.clone()));

@@ -5,7 +5,6 @@ use crate::asr::create_asr_service;
 use crate::audio::{encode_to_pcm, encode_to_wav, AudioRecorder};
 use crate::config::AppConfig;
 use crate::llm::create_llm_service;
-use crate::output;
 
 #[derive(Debug, thiserror::Error)]
 pub enum PipelineError {
@@ -15,8 +14,6 @@ pub enum PipelineError {
     Asr(#[from] crate::asr::AsrError),
     #[error("LLM error: {0}")]
     Llm(#[from] crate::llm::LlmError),
-    #[error("Output error: {0}")]
-    Output(#[from] crate::output::OutputError),
     #[error("Pipeline error: {0}")]
     Other(String),
 }
@@ -49,11 +46,8 @@ impl VoicePipeline {
         Ok(())
     }
 
-    /// 停止录音并处理
-    ///
-    /// 参数:
-    /// - `original_app_pid`: 开始录音时的应用 PID，用于智能粘贴判断
-    pub async fn stop_and_process(&self, original_app_pid: Option<i32>) -> Result<String, PipelineError> {
+    /// 停止录音并处理，返回识别结果文本
+    pub async fn stop_and_process(&self) -> Result<String, PipelineError> {
         // 停止录音 - 使用同步锁，快速获取并释放
         let samples = {
             let mut recorder = self.recorder.write().map_err(|e| {
@@ -141,25 +135,6 @@ impl VoicePipeline {
                     Err(e) => {
                         tracing::warn!("LLM refinement failed, using original: {}", e);
                     }
-                }
-            }
-        }
-
-        // 输出文本
-        if !final_text.is_empty() {
-            tracing::info!("About to output text: {}", final_text);
-            match output::output_text(
-                &final_text,
-                config.output.restore_clipboard,
-                config.output.paste_delay_ms,
-                original_app_pid,
-            ) {
-                Ok(_) => {
-                    tracing::info!("Text output successfully: {}", final_text);
-                }
-                Err(e) => {
-                    tracing::error!("Text output failed: {}", e);
-                    return Err(e.into());
                 }
             }
         }
