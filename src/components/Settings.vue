@@ -313,7 +313,7 @@ async function loadConfig() {
       llmEnabled.value = config.llm?.enabled ?? true;
       llmProvider.value = config.llm?.provider || 'DashScope';
       if (llmProvider.value === 'DashScope') {
-        llmApiKey.value = config.llm?.dashscope?.api_key || config.asr?.dashscope?.api_key || '';
+        llmApiKey.value = config.llm?.dashscope?.api_key || config.asr?.dashscope?.api_key || config.asr?.qwen?.api_key || '';
         llmModel.value = config.llm?.dashscope?.model || 'qwen-plus';
       } else if (llmProvider.value === 'Ollama') {
         ollamaEndpoint.value = config.llm?.ollama?.endpoint || 'http://localhost:11434';
