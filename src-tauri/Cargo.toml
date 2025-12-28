@@ -1,6 +1,6 @@
 [package]
 name = "vhisper"
-version = "1.0.6"
+version = "1.0.7-beta.1"
 description = "Voice Input Method"
 authors = ["Vhisper"]
 license = "MIT"
