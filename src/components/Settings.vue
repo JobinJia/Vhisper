@@ -13,7 +13,6 @@ interface PermissionStatus {
 }
 const permissionStatus = ref<PermissionStatus | null>(null);
 const checkingPermissions = ref(false);
-const requestingMicrophone = ref(false);
 
 // ASR 配置
 const asrProvider = ref('Qwen');
@@ -269,19 +268,6 @@ async function checkPermissions() {
     console.error('Failed to check permissions:', e);
   } finally {
     checkingPermissions.value = false;
-  }
-}
-
-async function requestMicrophonePermission() {
-  requestingMicrophone.value = true;
-  try {
-    await invoke<boolean>('request_microphone_permission');
-    // Re-check permissions after requesting
-    await checkPermissions();
-  } catch (e) {
-    console.error('Failed to request microphone permission:', e);
-  } finally {
-    requestingMicrophone.value = false;
   }
 }
 
@@ -863,15 +849,7 @@ onMounted(() => {
             </div>
             <div class="permission-actions">
               <button
-                v-if="permissionStatus?.microphone === 'NotDetermined'"
-                class="btn-secondary"
-                @click="requestMicrophonePermission"
-                :disabled="requestingMicrophone"
-              >
-                {{ requestingMicrophone ? '请求中...' : '请求授权' }}
-              </button>
-              <button
-                v-else-if="permissionStatus?.microphone === 'Denied'"
+                v-if="permissionStatus?.microphone !== 'Granted' && permissionStatus?.microphone !== 'NotApplicable'"
                 class="btn-secondary"
                 @click="openMicrophoneSettings"
               >

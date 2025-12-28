@@ -68,6 +68,14 @@ pub fn open_accessibility_settings() {
     }
 }
 
+/// Request accessibility permission with system prompt (shows dialog on macOS)
+pub fn request_accessibility() {
+    #[cfg(target_os = "macos")]
+    {
+        macos::request_accessibility_with_prompt();
+    }
+}
+
 /// Open microphone settings
 pub fn open_microphone_settings() {
     #[cfg(target_os = "macos")]

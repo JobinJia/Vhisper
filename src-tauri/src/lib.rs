@@ -121,6 +121,7 @@ pub fn run() {
             commands::test::test_ollama_api,
             commands::permissions::check_permissions,
             commands::permissions::request_microphone_permission,
+            commands::permissions::request_accessibility_permission,
             commands::permissions::open_accessibility_settings,
             commands::permissions::open_microphone_settings,
         ])

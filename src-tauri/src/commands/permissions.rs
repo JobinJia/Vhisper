@@ -18,6 +18,12 @@ pub fn open_accessibility_settings() {
     permissions::open_accessibility_settings();
 }
 
+/// Request accessibility permission (triggers system dialog on macOS)
+#[tauri::command]
+pub fn request_accessibility_permission() {
+    permissions::request_accessibility();
+}
+
 /// Open microphone settings in System Preferences
 #[tauri::command]
 pub fn open_microphone_settings() {
