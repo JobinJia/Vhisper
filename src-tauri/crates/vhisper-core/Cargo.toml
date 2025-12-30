@@ -4,6 +4,13 @@ version = "0.1.0"
 edition = "2021"
 description = "Vhisper core library - ASR, LLM, Audio processing"
 
+[lib]
+crate-type = ["lib", "staticlib", "cdylib"]
+
+[features]
+default = []
+ffi = []
+
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }

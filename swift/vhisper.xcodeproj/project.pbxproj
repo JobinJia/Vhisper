@@ -1,0 +1,645 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		482508142F01B88C003AE32C /* VhisperCore.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 482508132F01B88C003AE32C /* VhisperCore.xcframework */; };
+		482508182F01B920003AE32C /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 482508172F01B920003AE32C /* SystemConfiguration.framework */; };
+		4825081A2F01B92A003AE32C /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 482508192F01B92A003AE32C /* Security.framework */; };
+		4825081C2F01B931003AE32C /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4825081B2F01B931003AE32C /* CoreAudio.framework */; };
+		4825081E2F01B938003AE32C /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4825081D2F01B938003AE32C /* AudioToolbox.framework */; };
+		482508202F01B941003AE32C /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4825081F2F01B941003AE32C /* CoreFoundation.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		482507E82F01B6B6003AE32C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 482507D02F01B6B5003AE32C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 482507D72F01B6B5003AE32C;
+			remoteInfo = vhisper;
+		};
+		482507F22F01B6B6003AE32C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 482507D02F01B6B5003AE32C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 482507D72F01B6B5003AE32C;
+			remoteInfo = vhisper;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		482507D82F01B6B5003AE32C /* vhisper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = vhisper.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		482507E72F01B6B6003AE32C /* vhisperTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = vhisperTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		482507F12F01B6B6003AE32C /* vhisperUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = vhisperUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		482508132F01B88C003AE32C /* VhisperCore.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = VhisperCore.xcframework; sourceTree = "<group>"; };
+		482508172F01B920003AE32C /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		482508192F01B92A003AE32C /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		4825081B2F01B931003AE32C /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
+		4825081D2F01B938003AE32C /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
+		4825081F2F01B941003AE32C /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		482507DA2F01B6B5003AE32C /* vhisper */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = vhisper;
+			sourceTree = "<group>";
+		};
+		482507EA2F01B6B6003AE32C /* vhisperTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = vhisperTests;
+			sourceTree = "<group>";
+		};
+		482507F42F01B6B6003AE32C /* vhisperUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = vhisperUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		482507D52F01B6B5003AE32C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				482508182F01B920003AE32C /* SystemConfiguration.framework in Frameworks */,
+				4825081A2F01B92A003AE32C /* Security.framework in Frameworks */,
+				482508202F01B941003AE32C /* CoreFoundation.framework in Frameworks */,
+				4825081E2F01B938003AE32C /* AudioToolbox.framework in Frameworks */,
+				4825081C2F01B931003AE32C /* CoreAudio.framework in Frameworks */,
+				482508142F01B88C003AE32C /* VhisperCore.xcframework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		482507E42F01B6B6003AE32C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		482507EE2F01B6B6003AE32C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		482507CF2F01B6B5003AE32C = {
+			isa = PBXGroup;
+			children = (
+				482507DA2F01B6B5003AE32C /* vhisper */,
+				482507EA2F01B6B6003AE32C /* vhisperTests */,
+				482507F42F01B6B6003AE32C /* vhisperUITests */,
+				482508122F01B88C003AE32C /* Frameworks */,
+				482507D92F01B6B5003AE32C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		482507D92F01B6B5003AE32C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				482507D82F01B6B5003AE32C /* vhisper.app */,
+				482507E72F01B6B6003AE32C /* vhisperTests.xctest */,
+				482507F12F01B6B6003AE32C /* vhisperUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		482508122F01B88C003AE32C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				4825081F2F01B941003AE32C /* CoreFoundation.framework */,
+				4825081D2F01B938003AE32C /* AudioToolbox.framework */,
+				4825081B2F01B931003AE32C /* CoreAudio.framework */,
+				482508192F01B92A003AE32C /* Security.framework */,
+				482508172F01B920003AE32C /* SystemConfiguration.framework */,
+				482508132F01B88C003AE32C /* VhisperCore.xcframework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		482507D72F01B6B5003AE32C /* vhisper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 482507FB2F01B6B6003AE32C /* Build configuration list for PBXNativeTarget "vhisper" */;
+			buildPhases = (
+				482507D42F01B6B5003AE32C /* Sources */,
+				482507D52F01B6B5003AE32C /* Frameworks */,
+				482507D62F01B6B5003AE32C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				482507DA2F01B6B5003AE32C /* vhisper */,
+			);
+			name = vhisper;
+			packageProductDependencies = (
+			);
+			productName = vhisper;
+			productReference = 482507D82F01B6B5003AE32C /* vhisper.app */;
+			productType = "com.apple.product-type.application";
+		};
+		482507E62F01B6B6003AE32C /* vhisperTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 482507FE2F01B6B6003AE32C /* Build configuration list for PBXNativeTarget "vhisperTests" */;
+			buildPhases = (
+				482507E32F01B6B6003AE32C /* Sources */,
+				482507E42F01B6B6003AE32C /* Frameworks */,
+				482507E52F01B6B6003AE32C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				482507E92F01B6B6003AE32C /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				482507EA2F01B6B6003AE32C /* vhisperTests */,
+			);
+			name = vhisperTests;
+			packageProductDependencies = (
+			);
+			productName = vhisperTests;
+			productReference = 482507E72F01B6B6003AE32C /* vhisperTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		482507F02F01B6B6003AE32C /* vhisperUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 482508012F01B6B6003AE32C /* Build configuration list for PBXNativeTarget "vhisperUITests" */;
+			buildPhases = (
+				482507ED2F01B6B6003AE32C /* Sources */,
+				482507EE2F01B6B6003AE32C /* Frameworks */,
+				482507EF2F01B6B6003AE32C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				482507F32F01B6B6003AE32C /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				482507F42F01B6B6003AE32C /* vhisperUITests */,
+			);
+			name = vhisperUITests;
+			packageProductDependencies = (
+			);
+			productName = vhisperUITests;
+			productReference = 482507F12F01B6B6003AE32C /* vhisperUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		482507D02F01B6B5003AE32C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					482507D72F01B6B5003AE32C = {
+						CreatedOnToolsVersion = 26.0.1;
+					};
+					482507E62F01B6B6003AE32C = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = 482507D72F01B6B5003AE32C;
+					};
+					482507F02F01B6B6003AE32C = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = 482507D72F01B6B5003AE32C;
+					};
+				};
+			};
+			buildConfigurationList = 482507D32F01B6B5003AE32C /* Build configuration list for PBXProject "vhisper" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 482507CF2F01B6B5003AE32C;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 482507D92F01B6B5003AE32C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				482507D72F01B6B5003AE32C /* vhisper */,
+				482507E62F01B6B6003AE32C /* vhisperTests */,
+				482507F02F01B6B6003AE32C /* vhisperUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		482507D62F01B6B5003AE32C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		482507E52F01B6B6003AE32C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		482507EF2F01B6B6003AE32C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		482507D42F01B6B5003AE32C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		482507E32F01B6B6003AE32C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		482507ED2F01B6B6003AE32C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		482507E92F01B6B6003AE32C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 482507D72F01B6B5003AE32C /* vhisper */;
+			targetProxy = 482507E82F01B6B6003AE32C /* PBXContainerItemProxy */;
+		};
+		482507F32F01B6B6003AE32C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 482507D72F01B6B5003AE32C /* vhisper */;
+			targetProxy = 482507F22F01B6B6003AE32C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		482507F92F01B6B6003AE32C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 9VJYR7FQU6;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		482507FA2F01B6B6003AE32C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 9VJYR7FQU6;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		482507FC2F01B6B6003AE32C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				AUTOMATION_APPLE_EVENTS = NO;
+				CODE_SIGN_ENTITLEMENTS = vhisper/vhisper.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9VJYR7FQU6;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = vhisper/Info.plist;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Vhisper 需要麦克风权限来进行语音输入";
+				INFOPLIST_KEY_NSSystemAdministrationUsageDescription = "Vhisper 需要权限来进行语音输入";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vimo.voice.vhisper;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
+				RUNTIME_EXCEPTION_ALLOW_JIT = NO;
+				RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY = NO;
+				RUNTIME_EXCEPTION_DEBUGGING_TOOL = NO;
+				RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = NO;
+				RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = NO;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		482507FD2F01B6B6003AE32C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				AUTOMATION_APPLE_EVENTS = NO;
+				CODE_SIGN_ENTITLEMENTS = vhisper/vhisper.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9VJYR7FQU6;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = vhisper/Info.plist;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Vhisper 需要麦克风权限来进行语音输入";
+				INFOPLIST_KEY_NSSystemAdministrationUsageDescription = "Vhisper 需要权限来进行语音输入";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vimo.voice.vhisper;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
+				RUNTIME_EXCEPTION_ALLOW_JIT = NO;
+				RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY = NO;
+				RUNTIME_EXCEPTION_DEBUGGING_TOOL = NO;
+				RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = NO;
+				RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = NO;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		482507FF2F01B6B6003AE32C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9VJYR7FQU6;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vimo.voice.vhisperTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/vhisper.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/vhisper";
+			};
+			name = Debug;
+		};
+		482508002F01B6B6003AE32C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9VJYR7FQU6;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vimo.voice.vhisperTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/vhisper.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/vhisper";
+			};
+			name = Release;
+		};
+		482508022F01B6B6003AE32C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9VJYR7FQU6;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vimo.voice.vhisperUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = vhisper;
+			};
+			name = Debug;
+		};
+		482508032F01B6B6003AE32C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9VJYR7FQU6;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vimo.voice.vhisperUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = vhisper;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		482507D32F01B6B5003AE32C /* Build configuration list for PBXProject "vhisper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				482507F92F01B6B6003AE32C /* Debug */,
+				482507FA2F01B6B6003AE32C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		482507FB2F01B6B6003AE32C /* Build configuration list for PBXNativeTarget "vhisper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				482507FC2F01B6B6003AE32C /* Debug */,
+				482507FD2F01B6B6003AE32C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		482507FE2F01B6B6003AE32C /* Build configuration list for PBXNativeTarget "vhisperTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				482507FF2F01B6B6003AE32C /* Debug */,
+				482508002F01B6B6003AE32C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		482508012F01B6B6003AE32C /* Build configuration list for PBXNativeTarget "vhisperUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				482508022F01B6B6003AE32C /* Debug */,
+				482508032F01B6B6003AE32C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 482507D02F01B6B5003AE32C /* Project object */;
+}

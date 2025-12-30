@@ -1,3 +1,3 @@
 mod voice;
 
-pub use voice::{PipelineError, VoicePipeline};
+pub use voice::{PipelineError, PipelineState, VoicePipeline};

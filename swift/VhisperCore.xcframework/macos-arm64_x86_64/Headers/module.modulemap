@@ -1,0 +1,4 @@
+module VhisperCore {
+    header "vhisper_core.h"
+    export *
+}

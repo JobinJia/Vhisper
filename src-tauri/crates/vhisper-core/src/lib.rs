@@ -1,6 +1,7 @@
 pub mod asr;
 pub mod audio;
 pub mod config;
+pub mod ffi;
 pub mod llm;
 pub mod pipeline;
 
