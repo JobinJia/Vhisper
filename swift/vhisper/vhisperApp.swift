@@ -181,24 +181,43 @@ class HotkeyManager: ObservableObject {
 
     @Published var currentHotkey: Hotkey = Hotkey.default
     @Published var isListeningForHotkey = false
+    @Published var pendingHotkey: Hotkey?  // 录制中的待确认热键
 
     private var eventMonitor: Any?
     private var flagsMonitor: Any?
 
     struct Hotkey: Codable, Equatable {
-        var keyCode: UInt16      // 0xFFFF 表示纯修饰键模式
-        var modifiers: UInt32
+        var keyCode: UInt16      // 按键码（0xFFFF 表示通用修饰键模式）
+        var modifiers: UInt32    // 修饰键状态
         var isModifierOnly: Bool // 是否纯修饰键触发
+        var useSpecificModifierKey: Bool  // 是否使用特定修饰键（区分左右）
 
-        static let `default` = Hotkey(keyCode: 0xFFFF, modifiers: UInt32(optionKey), isModifierOnly: true) // 默认: 单按 Option
+        // 左右修饰键的 keyCode
+        static let leftShift: UInt16 = 56
+        static let rightShift: UInt16 = 60
+        static let leftControl: UInt16 = 59
+        static let rightControl: UInt16 = 62
+        static let leftOption: UInt16 = 58
+        static let rightOption: UInt16 = 61
+        static let leftCommand: UInt16 = 55
+        static let rightCommand: UInt16 = 54
+        static let fnKey: UInt16 = 63
 
-        init(keyCode: UInt16, modifiers: UInt32, isModifierOnly: Bool = false) {
+        static let `default` = Hotkey(keyCode: 0xFFFF, modifiers: UInt32(optionKey), isModifierOnly: true, useSpecificModifierKey: false) // 默认: 单按 Option
+
+        init(keyCode: UInt16, modifiers: UInt32, isModifierOnly: Bool = false, useSpecificModifierKey: Bool = false) {
             self.keyCode = keyCode
             self.modifiers = modifiers
             self.isModifierOnly = isModifierOnly
+            self.useSpecificModifierKey = useSpecificModifierKey
         }
 
         var displayString: String {
+            // 如果是特定修饰键模式（区分左右）
+            if useSpecificModifierKey && isModifierOnly {
+                return Self.specificModifierKeyName(keyCode) ?? "未知修饰键"
+            }
+
             var parts: [String] = []
 
             if modifiers & UInt32(controlKey) != 0 { parts.append("⌃") }
@@ -208,33 +227,72 @@ class HotkeyManager: ObservableObject {
             if modifiers & UInt32(NSEvent.ModifierFlags.function.rawValue) != 0 { parts.append("🌐") }
 
             if !isModifierOnly {
-                parts.append(keyCodeToString(keyCode))
+                parts.append(Self.keyCodeToString(keyCode))
             }
 
             return parts.isEmpty ? "未设置" : parts.joined()
         }
 
-        private func keyCodeToString(_ keyCode: UInt16) -> String {
+        /// 特定修饰键名称（区分左右）
+        static func specificModifierKeyName(_ keyCode: UInt16) -> String? {
+            switch keyCode {
+            case leftShift: return "左⇧"
+            case rightShift: return "右⇧"
+            case leftControl: return "左⌃"
+            case rightControl: return "右⌃"
+            case leftOption: return "左⌥"
+            case rightOption: return "右⌥"
+            case leftCommand: return "左⌘"
+            case rightCommand: return "右⌘"
+            case fnKey: return "🌐Fn"
+            default: return nil
+            }
+        }
+
+        /// 判断 keyCode 是否是修饰键
+        static func isModifierKeyCode(_ keyCode: UInt16) -> Bool {
+            return [leftShift, rightShift, leftControl, rightControl,
+                    leftOption, rightOption, leftCommand, rightCommand, fnKey].contains(keyCode)
+        }
+
+        /// 按键码转字符串（优先使用系统 API 动态获取）
+        static func keyCodeToString(_ keyCode: UInt16) -> String {
+            // 1. 先处理特殊键（这些键不能通过 UCKeyTranslate 获取）
+            if let special = specialKeyName(for: keyCode) {
+                return special
+            }
+
+            // 2. 使用系统 API 动态获取按键字符（支持所有键盘布局）
+            if let char = characterForKeyCode(keyCode) {
+                return char.uppercased()
+            }
+
+            // 3. 兜底
+            return "Key(\(keyCode))"
+        }
+
+        /// 特殊键名称映射（功能键、方向键等不能通过 UCKeyTranslate 获取的）
+        private static func specialKeyName(for keyCode: UInt16) -> String? {
             switch Int(keyCode) {
+            // 特殊功能键
             case kVK_Space: return "Space"
             case kVK_Return: return "↩"
             case kVK_Tab: return "⇥"
             case kVK_Escape: return "⎋"
             case kVK_Delete: return "⌫"
-            case kVK_ANSI_A...kVK_ANSI_Z:
-                let letters = "ASDFHGZXCVBQWERYT123465=97-80]OU[IP"
-                let index = letters.index(letters.startIndex, offsetBy: Int(keyCode))
-                return String(letters[index])
-            case kVK_ANSI_0: return "0"
-            case kVK_ANSI_1: return "1"
-            case kVK_ANSI_2: return "2"
-            case kVK_ANSI_3: return "3"
-            case kVK_ANSI_4: return "4"
-            case kVK_ANSI_5: return "5"
-            case kVK_ANSI_6: return "6"
-            case kVK_ANSI_7: return "7"
-            case kVK_ANSI_8: return "8"
-            case kVK_ANSI_9: return "9"
+            case kVK_ForwardDelete: return "⌦"
+            case kVK_Home: return "↖"
+            case kVK_End: return "↘"
+            case kVK_PageUp: return "⇞"
+            case kVK_PageDown: return "⇟"
+            case kVK_UpArrow: return "↑"
+            case kVK_DownArrow: return "↓"
+            case kVK_LeftArrow: return "←"
+            case kVK_RightArrow: return "→"
+            case kVK_Help: return "Help"
+            case kVK_CapsLock: return "⇪"
+
+            // 功能键 F1-F20
             case kVK_F1: return "F1"
             case kVK_F2: return "F2"
             case kVK_F3: return "F3"
@@ -247,9 +305,92 @@ class HotkeyManager: ObservableObject {
             case kVK_F10: return "F10"
             case kVK_F11: return "F11"
             case kVK_F12: return "F12"
-            case 0x3F: return "🌐" // Fn/Globe key
-            default: return "Key\(keyCode)"
+            case kVK_F13: return "F13"
+            case kVK_F14: return "F14"
+            case kVK_F15: return "F15"
+            case kVK_F16: return "F16"
+            case kVK_F17: return "F17"
+            case kVK_F18: return "F18"
+            case kVK_F19: return "F19"
+            case kVK_F20: return "F20"
+
+            // Fn/Globe key
+            case 0x3F: return "🌐"
+
+            // PC 键盘特有键（外接键盘）
+            case 0x72: return "Insert"      // Help/Insert 键 (PC keyboards)
+            case 0x71: return "F15/Pause"   // Pause 通常映射为 F15
+            case 0x69: return "PrintScr"    // Print Screen
+            case 0x6B: return "F14/ScrLk"   // Scroll Lock 通常映射为 F14
+            case 0x47: return "NumLock"     // Num Lock / Clear
+
+            // 左右修饰键（用于区分）
+            case 56: return "左Shift"
+            case 60: return "右Shift"
+            case 59: return "左Ctrl"
+            case 62: return "右Ctrl"
+            case 58: return "左Option"
+            case 61: return "右Option"
+            case 55: return "左Cmd"
+            case 54: return "右Cmd"
+
+            // 小键盘（需要特殊标记）
+            case kVK_ANSI_Keypad0: return "⌨0"
+            case kVK_ANSI_Keypad1: return "⌨1"
+            case kVK_ANSI_Keypad2: return "⌨2"
+            case kVK_ANSI_Keypad3: return "⌨3"
+            case kVK_ANSI_Keypad4: return "⌨4"
+            case kVK_ANSI_Keypad5: return "⌨5"
+            case kVK_ANSI_Keypad6: return "⌨6"
+            case kVK_ANSI_Keypad7: return "⌨7"
+            case kVK_ANSI_Keypad8: return "⌨8"
+            case kVK_ANSI_Keypad9: return "⌨9"
+            case kVK_ANSI_KeypadDecimal: return "⌨."
+            case kVK_ANSI_KeypadMultiply: return "⌨*"
+            case kVK_ANSI_KeypadPlus: return "⌨+"
+            case kVK_ANSI_KeypadClear: return "⌨Clear"
+            case kVK_ANSI_KeypadDivide: return "⌨/"
+            case kVK_ANSI_KeypadEnter: return "⌨↩"
+            case kVK_ANSI_KeypadMinus: return "⌨-"
+            case kVK_ANSI_KeypadEquals: return "⌨="
+
+            default: return nil
             }
+        }
+
+        /// 使用 UCKeyTranslate 动态获取按键字符（支持所有键盘布局）
+        private static func characterForKeyCode(_ keyCode: UInt16) -> String? {
+            // 获取当前键盘布局
+            guard let inputSource = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue(),
+                  let layoutDataPtr = TISGetInputSourceProperty(inputSource, kTISPropertyUnicodeKeyLayoutData) else {
+                return nil
+            }
+
+            let layoutData = unsafeBitCast(layoutDataPtr, to: CFData.self)
+            let keyboardLayout = unsafeBitCast(CFDataGetBytePtr(layoutData), to: UnsafePointer<UCKeyboardLayout>.self)
+
+            var deadKeyState: UInt32 = 0
+            var chars = [UniChar](repeating: 0, count: 4)
+            var actualLength: Int = 0
+
+            let status = UCKeyTranslate(
+                keyboardLayout,
+                keyCode,
+                UInt16(kUCKeyActionDown),
+                0,  // 无修饰键
+                UInt32(LMGetKbdType()),
+                UInt32(kUCKeyTranslateNoDeadKeysMask),
+                &deadKeyState,
+                chars.count,
+                &actualLength,
+                &chars
+            )
+
+            guard status == noErr, actualLength > 0 else {
+                return nil
+            }
+
+            return String(utf16CodeUnits: chars, count: actualLength)
         }
     }
 
@@ -263,9 +404,16 @@ class HotkeyManager: ObservableObject {
         unregister()
 
         if currentHotkey.isModifierOnly {
-            // 纯修饰键模式：只监听 flagsChanged
-            flagsMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
-                self?.handleModifierOnlyHotkey(event)
+            if currentHotkey.useSpecificModifierKey {
+                // 特定修饰键模式（区分左右）：监听 flagsChanged 并检查 keyCode
+                flagsMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+                    self?.handleSpecificModifierHotkey(event)
+                }
+            } else {
+                // 通用修饰键模式：只监听 flagsChanged
+                flagsMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+                    self?.handleModifierOnlyHotkey(event)
+                }
             }
         } else {
             // 普通按键模式
@@ -317,6 +465,36 @@ class HotkeyManager: ObservableObject {
         }
     }
 
+    /// 处理特定修饰键热键（区分左右）
+    private func handleSpecificModifierHotkey(_ event: NSEvent) {
+        guard !isListeningForHotkey else { return }
+
+        let keyCode = event.keyCode
+        let hasAnyModifier = event.modifierFlags.carbonFlags != 0
+
+        // 检查是否是我们设置的特定修饰键
+        if keyCode == currentHotkey.keyCode {
+            if hasAnyModifier && !isHotkeyPressed {
+                // 按下
+                isHotkeyPressed = true
+                DispatchQueue.main.async {
+                    VhisperManager.shared.startRecording()
+                }
+            }
+        }
+
+        // 检查修饰键释放
+        if !hasAnyModifier && isHotkeyPressed {
+            // 释放
+            isHotkeyPressed = false
+            DispatchQueue.main.async {
+                if VhisperManager.shared.state == .recording {
+                    VhisperManager.shared.stopRecording()
+                }
+            }
+        }
+    }
+
     private func handleKeyDown(_ event: NSEvent) {
         guard !isListeningForHotkey else { return }
 
@@ -344,81 +522,144 @@ class HotkeyManager: ObservableObject {
         }
     }
 
+    // MARK: - 热键录制（新逻辑：手动控制状态）
+
     private var hotkeyRecordingMonitor: Any?
     private var hotkeyRecordingFlagsMonitor: Any?
     private var recordedModifiers: UInt32 = 0
+    private var lastModifierKeyCode: UInt16?  // 记录最后按下的修饰键 keyCode（用于区分左右）
 
-    func startListeningForNewHotkey(completion: @escaping (Hotkey) -> Void) {
+    /// 开始监听新热键（进入录制状态）
+    func startListeningForNewHotkey() {
         unregister()
         isListeningForHotkey = true
+        pendingHotkey = nil
         recordedModifiers = 0
 
-        // 监听普通按键
-        hotkeyRecordingMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            self?.handleHotkeyRecordingKeyDown(event: event, completion: completion)
-            return nil
+        // 监听所有按键事件
+        hotkeyRecordingMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { [weak self] event in
+            if event.type == .keyDown {
+                self?.handleHotkeyRecordingKeyDown(event: event)
+            }
+            return nil  // 吃掉事件，防止触发其他操作
         }
 
         // 监听修饰键变化（用于纯修饰键模式）
         hotkeyRecordingFlagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
-            self?.handleHotkeyRecordingFlags(event: event, completion: completion)
+            self?.handleHotkeyRecordingFlags(event: event)
             return event
         }
 
-        // 5秒后自动取消
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
-            guard let self = self, self.isListeningForHotkey else { return }
-            self.stopListeningForNewHotkey()
-            self.register()
-        }
+        print("🎹 开始录制热键...")
     }
 
-    private func handleHotkeyRecordingKeyDown(event: NSEvent, completion: @escaping (Hotkey) -> Void) {
+    private func handleHotkeyRecordingKeyDown(event: NSEvent) {
         guard isListeningForHotkey else { return }
 
-        // 普通按键 + 可能的修饰键
+        let keyCode = event.keyCode
+        let modifiers = event.modifierFlags.carbonFlags
+
+        // 检查是否是修饰键 - 如果是，创建"特定修饰键"热键（区分左右）
+        if Hotkey.isModifierKeyCode(keyCode) {
+            let newHotkey = Hotkey(
+                keyCode: keyCode,
+                modifiers: 0,
+                isModifierOnly: true,
+                useSpecificModifierKey: true  // 使用特定修饰键模式
+            )
+
+            DispatchQueue.main.async {
+                self.pendingHotkey = newHotkey
+                print("🎹 录制到特定修饰键: \(newHotkey.displayString) (keyCode: \(keyCode))")
+            }
+            return
+        }
+
+        // 普通按键 + 可能的修饰键组合
         let newHotkey = Hotkey(
-            keyCode: event.keyCode,
-            modifiers: event.modifierFlags.carbonFlags,
-            isModifierOnly: false
+            keyCode: keyCode,
+            modifiers: modifiers,
+            isModifierOnly: false,
+            useSpecificModifierKey: false
         )
 
-        finishHotkeyRecording(hotkey: newHotkey, completion: completion)
+        DispatchQueue.main.async {
+            self.pendingHotkey = newHotkey
+            print("🎹 录制到: \(newHotkey.displayString) (keyCode: \(keyCode))")
+        }
     }
 
-    private func handleHotkeyRecordingFlags(event: NSEvent, completion: @escaping (Hotkey) -> Void) {
+    private func handleHotkeyRecordingFlags(event: NSEvent) {
         guard isListeningForHotkey else { return }
 
+        let keyCode = event.keyCode
         let currentFlags = event.modifierFlags.carbonFlags
 
-        if currentFlags != 0 {
-            // 修饰键按下，记录
+        // 检查是否是特定的修饰键按下事件
+        if Hotkey.isModifierKeyCode(keyCode) && currentFlags != 0 {
+            // 记录特定修饰键的 keyCode
+            lastModifierKeyCode = keyCode
             recordedModifiers = currentFlags
-        } else if recordedModifiers != 0 {
-            // 修饰键释放，创建纯修饰键热键
-            let newHotkey = Hotkey(
-                keyCode: 0xFFFF,
-                modifiers: recordedModifiers,
-                isModifierOnly: true
-            )
-            finishHotkeyRecording(hotkey: newHotkey, completion: completion)
+        } else if recordedModifiers != 0 && currentFlags == 0 {
+            // 修饰键释放
+            if let lastKeyCode = lastModifierKeyCode, Hotkey.isModifierKeyCode(lastKeyCode) {
+                // 创建特定修饰键热键（区分左右）
+                let newHotkey = Hotkey(
+                    keyCode: lastKeyCode,
+                    modifiers: 0,
+                    isModifierOnly: true,
+                    useSpecificModifierKey: true
+                )
+
+                DispatchQueue.main.async {
+                    self.pendingHotkey = newHotkey
+                    print("🎹 录制到特定修饰键(flags): \(newHotkey.displayString)")
+                }
+            } else {
+                // 通用修饰键模式（不区分左右）
+                let newHotkey = Hotkey(
+                    keyCode: 0xFFFF,
+                    modifiers: recordedModifiers,
+                    isModifierOnly: true,
+                    useSpecificModifierKey: false
+                )
+
+                DispatchQueue.main.async {
+                    self.pendingHotkey = newHotkey
+                    print("🎹 录制到通用修饰键: \(newHotkey.displayString)")
+                }
+            }
+            recordedModifiers = 0
+            lastModifierKeyCode = nil
         }
     }
 
-    private func finishHotkeyRecording(hotkey: Hotkey, completion: @escaping (Hotkey) -> Void) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.currentHotkey = hotkey
-            self.saveHotkey()
-            self.stopListeningForNewHotkey()
-            self.register()
-            completion(hotkey)
+    /// 确认并保存录制的热键
+    func confirmPendingHotkey() {
+        guard let pending = pendingHotkey else {
+            cancelHotkeyRecording()
+            return
         }
+
+        currentHotkey = pending
+        saveHotkey()
+        stopListeningForNewHotkey()
+        register()
+        print("✅ 热键已保存: \(currentHotkey.displayString)")
+    }
+
+    /// 取消录制
+    func cancelHotkeyRecording() {
+        stopListeningForNewHotkey()
+        register()
+        print("❌ 热键录制已取消")
     }
 
     func stopListeningForNewHotkey() {
         isListeningForHotkey = false
+        pendingHotkey = nil
         recordedModifiers = 0
+        lastModifierKeyCode = nil
         if let monitor = hotkeyRecordingMonitor {
             NSEvent.removeMonitor(monitor)
             hotkeyRecordingMonitor = nil
@@ -514,6 +755,10 @@ class VhisperManager: ObservableObject {
             state = .recording
             errorMessage = nil
             updateAppDelegateIcon(recording: true)
+
+            // 启动音频振幅监听并显示波形窗口
+            AudioLevelMonitor.shared.startMonitoring()
+            WaveformOverlayController.shared.show(with: AudioLevelMonitor.shared)
         } catch {
             errorMessage = "录音启动失败: \(error.localizedDescription)"
         }
@@ -524,6 +769,10 @@ class VhisperManager: ObservableObject {
 
         state = .processing
         updateAppDelegateIcon(recording: false)
+
+        // 隐藏波形窗口并停止监听
+        WaveformOverlayController.shared.hide()
+        AudioLevelMonitor.shared.stopMonitoring()
 
         Task {
             do {
@@ -548,6 +797,10 @@ class VhisperManager: ObservableObject {
         try? vhisper?.cancel()
         state = .idle
         updateAppDelegateIcon(recording: false)
+
+        // 隐藏波形窗口并停止监听
+        WaveformOverlayController.shared.hide()
+        AudioLevelMonitor.shared.stopMonitoring()
     }
 
     func toggleRecording() {
@@ -757,15 +1010,65 @@ struct SettingsView: View {
             Form {
                 Section("热键设置") {
                     HStack {
-                        Text("录音热键")
+                        Text("当前热键")
                         Spacer()
-                        Button(hotkeyManager.isListeningForHotkey ? "按下新热键..." : hotkeyManager.currentHotkey.displayString) {
-                            hotkeyManager.startListeningForNewHotkey { _ in }
+                        Text(hotkeyManager.currentHotkey.displayString)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.secondary.opacity(0.2))
+                            .cornerRadius(6)
+                            .font(.system(.body, design: .monospaced))
+                    }
+
+                    if hotkeyManager.isListeningForHotkey {
+                        // 录制状态
+                        VStack(spacing: 12) {
+                            HStack {
+                                Image(systemName: "keyboard")
+                                    .foregroundColor(.orange)
+                                Text("请按下新的快捷键...")
+                                    .foregroundColor(.orange)
+                            }
+                            .font(.callout)
+
+                            // 显示录制到的热键
+                            if let pending = hotkeyManager.pendingHotkey {
+                                Text(pending.displayString)
+                                    .font(.system(.title2, design: .monospaced))
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(Color.accentColor.opacity(0.15))
+                                    .cornerRadius(8)
+                            } else {
+                                Text("等待输入...")
+                                    .font(.callout)
+                                    .foregroundColor(.secondary)
+                            }
+
+                            // 保存/取消按钮
+                            HStack(spacing: 12) {
+                                Button("取消") {
+                                    hotkeyManager.cancelHotkeyRecording()
+                                }
+                                .buttonStyle(.bordered)
+
+                                Button("保存") {
+                                    hotkeyManager.confirmPendingHotkey()
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .disabled(hotkeyManager.pendingHotkey == nil)
+                            }
+                        }
+                        .padding(.vertical, 8)
+                    } else {
+                        // 非录制状态
+                        Button("修改热键") {
+                            hotkeyManager.startListeningForNewHotkey()
                         }
                         .buttonStyle(.bordered)
                     }
 
-                    Text("按住热键开始录音，松开结束")
+                    Text("按住热键开始录音，松开结束\n支持：单个修饰键(⌥⌘⌃⇧) 或 组合键(⌘+Space)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
