@@ -6,5 +6,10 @@
 	<false/>
 	<key>com.apple.security.device.audio-input</key>
 	<true/>
+	<!-- Hardened Runtime: CGEvent 文本注入必需 -->
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+	<key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+	<true/>
 </dict>
 </plist>

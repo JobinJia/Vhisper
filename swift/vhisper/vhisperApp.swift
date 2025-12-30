@@ -570,12 +570,6 @@ class VhisperManager: ObservableObject {
     private func insertText(_ text: String) {
         guard !text.isEmpty else { return }
 
-        print("📝 准备输入文本: \(text)")
-
-        // 只检查权限状态，不弹窗（弹窗在设置页面手动触发）
-        let trusted = AXIsProcessTrusted()
-        print("📍 AXIsProcessTrusted: \(trusted)")
-
         // 使用 Espanso 风格的 CGEvent 输入（在主线程）
         DispatchQueue.main.async {
             self.sendUnicodeEventsEspansoStyle(text)
@@ -627,7 +621,6 @@ class VhisperManager: ObservableObject {
             usleep(delayMicroseconds)
         }
 
-        print("✅ 通过 CGEvent (Espanso 风格) 输入完成，共 \(chunks.count) 块")
     }
 
     /// 检查并释放 Shift 键（如果按下）
@@ -637,8 +630,6 @@ class VhisperManager: ObservableObject {
 
         let shiftPressed = checkEvent.flags.contains(.maskShift)
         if shiftPressed {
-            print("📍 检测到 Shift 键按下，先释放")
-
             // 发送 Shift 释放事件
             if let shiftUp = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_Shift), keyDown: false) {
                 shiftUp.post(tap: .cghidEventTap)
