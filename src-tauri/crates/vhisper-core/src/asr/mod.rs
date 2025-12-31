@@ -2,13 +2,15 @@ mod dashscope;
 mod funasr;
 mod openai_whisper;
 mod qwen;
+mod qwen_realtime;
 mod traits;
 
 pub use dashscope::DashScopeAsr;
 pub use funasr::FunAsr;
 pub use openai_whisper::OpenAiWhisper;
 pub use qwen::QwenAsr;
-pub use traits::{AsrError, AsrResult, AsrService};
+pub use qwen_realtime::QwenRealtimeAsr;
+pub use traits::{AsrError, AsrResult, AsrService, StreamingAsrEvent, StreamingAsrService, StreamingControl};
 
 use crate::config::settings::AsrConfig;
 
@@ -78,4 +80,26 @@ pub async fn test_openai_api(api_key: &str) -> Result<String, AsrError> {
 /// 测试 FunASR API
 pub async fn test_funasr_api(endpoint: &str) -> Result<String, AsrError> {
     funasr::test_api(endpoint).await
+}
+
+/// 根据配置创建流式 ASR 服务
+pub fn create_streaming_asr_service(
+    config: &AsrConfig,
+) -> Result<Box<dyn StreamingAsrService>, AsrError> {
+    match config.provider.as_str() {
+        "Qwen" => {
+            let qwen_config = config
+                .qwen
+                .as_ref()
+                .ok_or_else(|| AsrError::Config("通义千问 ASR 配置缺失".to_string()))?;
+            Ok(Box::new(QwenRealtimeAsr::new(
+                qwen_config.api_key.clone(),
+                qwen_config.model.clone(),
+            )))
+        }
+        _ => Err(AsrError::Config(format!(
+            "ASR 服务商 {} 不支持流式识别",
+            config.provider
+        ))),
+    }
 }

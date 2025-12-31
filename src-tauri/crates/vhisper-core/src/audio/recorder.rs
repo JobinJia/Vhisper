@@ -128,6 +128,19 @@ impl AudioRecorder {
     pub fn channels(&self) -> u16 {
         self.channels
     }
+
+    /// 获取并清空当前缓冲区中的音频数据（用于流式处理）
+    ///
+    /// 返回自上次调用以来录制的音频数据，并清空缓冲区
+    pub fn drain_buffer(&self) -> Vec<f32> {
+        let mut buffer = self.buffer.lock().unwrap();
+        std::mem::take(&mut *buffer)
+    }
+
+    /// 获取当前缓冲区大小（样本数）
+    pub fn buffer_size(&self) -> usize {
+        self.buffer.lock().unwrap().len()
+    }
 }
 
 impl Default for AudioRecorder {

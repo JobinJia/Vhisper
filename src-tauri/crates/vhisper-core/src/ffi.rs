@@ -15,6 +15,7 @@ use std::sync::{Arc, OnceLock};
 use tokio::runtime::Runtime;
 use tokio::sync::RwLock;
 
+use crate::asr::StreamingAsrEvent;
 use crate::config::AppConfig;
 use crate::pipeline::VoicePipeline;
 
@@ -51,6 +52,31 @@ pub struct VhisperHandle {
 /// - error: 失败时的错误信息（UTF-8），成功时为 NULL
 pub type VhisperResultCallback =
     extern "C" fn(context: *mut c_void, text: *const c_char, error: *const c_char);
+
+/// 流式识别事件类型
+#[repr(i32)]
+pub enum VhisperStreamingEventType {
+    /// 中间结果
+    Partial = 0,
+    /// 最终结果
+    Final = 1,
+    /// 错误
+    Error = 2,
+}
+
+/// 流式识别回调函数类型
+/// - context: 用户传入的上下文指针
+/// - event_type: 事件类型（0=Partial, 1=Final, 2=Error）
+/// - text: 已确认的文本（UTF-8），可能为 NULL
+/// - stash: 暂定文本（UTF-8），仅 Partial 事件有效，其他为 NULL
+/// - error: 错误信息（UTF-8），仅 Error 事件有效，其他为 NULL
+pub type VhisperStreamingCallback = extern "C" fn(
+    context: *mut c_void,
+    event_type: i32,
+    text: *const c_char,
+    stash: *const c_char,
+    error: *const c_char,
+);
 
 // ============================================================================
 // FFI 函数
@@ -292,4 +318,187 @@ pub extern "C" fn vhisper_string_free(s: *mut c_char) {
 pub extern "C" fn vhisper_version() -> *const c_char {
     static VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), "\0");
     VERSION.as_ptr() as *const c_char
+}
+
+// ============================================================================
+// 流式识别 FFI 函数
+// ============================================================================
+
+/// 开始流式录音和识别
+///
+/// 立即返回，识别结果通过回调持续通知
+///
+/// # 参数
+/// - handle: Vhisper 实例
+/// - callback: 流式事件回调函数
+/// - context: 传递给回调的用户上下文
+///
+/// # 返回
+/// - 0: 成功启动
+/// - -1: handle 无效
+/// - -2: 启动失败
+#[no_mangle]
+pub extern "C" fn vhisper_start_streaming(
+    handle: *mut VhisperHandle,
+    callback: VhisperStreamingCallback,
+    context: *mut c_void,
+) -> i32 {
+    if handle.is_null() {
+        return -1;
+    }
+
+    let handle = unsafe { &*handle };
+    let pipeline = handle.pipeline.clone();
+
+    // context 指针转为 usize 以满足 Send 约束
+    let context_usize = context as usize;
+
+    get_runtime().spawn(async move {
+        // 启动流式识别
+        let event_rx = match pipeline.start_streaming().await {
+            Ok(rx) => rx,
+            Err(e) => {
+                let ctx = context_usize as *mut c_void;
+                let error_msg = CString::new(e.to_string()).unwrap_or_default();
+                callback(
+                    ctx,
+                    VhisperStreamingEventType::Error as i32,
+                    ptr::null(),
+                    ptr::null(),
+                    error_msg.as_ptr(),
+                );
+                return;
+            }
+        };
+
+        // 持续接收事件并回调
+        let mut event_rx = event_rx;
+        let mut terminated = false;
+
+        while let Some(event) = event_rx.recv().await {
+            let ctx = context_usize as *mut c_void;
+            match event {
+                StreamingAsrEvent::Partial { text, stash } => {
+                    let c_text = CString::new(text).unwrap_or_default();
+                    let c_stash = CString::new(stash).unwrap_or_default();
+                    callback(
+                        ctx,
+                        VhisperStreamingEventType::Partial as i32,
+                        c_text.as_ptr(),
+                        c_stash.as_ptr(),
+                        ptr::null(),
+                    );
+                }
+                StreamingAsrEvent::Final { text } => {
+                    let c_text = CString::new(text).unwrap_or_default();
+                    callback(
+                        ctx,
+                        VhisperStreamingEventType::Final as i32,
+                        c_text.as_ptr(),
+                        ptr::null(),
+                        ptr::null(),
+                    );
+                    terminated = true;
+                    break;
+                }
+                StreamingAsrEvent::Error(msg) => {
+                    let error_msg = CString::new(msg).unwrap_or_default();
+                    callback(
+                        ctx,
+                        VhisperStreamingEventType::Error as i32,
+                        ptr::null(),
+                        ptr::null(),
+                        error_msg.as_ptr(),
+                    );
+                    terminated = true;
+                    break;
+                }
+            }
+        }
+
+        // 如果通道关闭但未收到 Final/Error，发送取消事件以释放 Swift context
+        if !terminated {
+            let ctx = context_usize as *mut c_void;
+            let error_msg = CString::new("Streaming cancelled").unwrap_or_default();
+            callback(
+                ctx,
+                VhisperStreamingEventType::Error as i32,
+                ptr::null(),
+                ptr::null(),
+                error_msg.as_ptr(),
+            );
+        }
+    });
+
+    0
+}
+
+/// 停止流式录音
+///
+/// 提交当前音频缓冲区，回调会收到 Final 事件
+///
+/// # 返回
+/// - 0: 成功
+/// - -1: handle 无效
+#[no_mangle]
+pub extern "C" fn vhisper_stop_streaming(handle: *mut VhisperHandle) -> i32 {
+    if handle.is_null() {
+        return -1;
+    }
+
+    let handle = unsafe { &*handle };
+    let pipeline = handle.pipeline.clone();
+
+    get_runtime().spawn(async move {
+        if let Err(e) = pipeline.stop_streaming().await {
+            tracing::error!("Failed to stop streaming: {}", e);
+        }
+    });
+
+    0
+}
+
+/// 取消流式识别
+///
+/// 停止录音并丢弃数据，不会触发 Final 回调
+///
+/// # 返回
+/// - 0: 成功
+/// - -1: handle 无效
+#[no_mangle]
+pub extern "C" fn vhisper_cancel_streaming(handle: *mut VhisperHandle) -> i32 {
+    if handle.is_null() {
+        return -1;
+    }
+
+    let handle = unsafe { &*handle };
+    let pipeline = handle.pipeline.clone();
+
+    get_runtime().spawn(async move {
+        if let Err(e) = pipeline.cancel_streaming().await {
+            tracing::error!("Failed to cancel streaming: {}", e);
+        }
+    });
+
+    0
+}
+
+/// 检查是否在流式模式
+///
+/// # 返回
+/// - 1: 流式模式
+/// - 0: 非流式模式
+/// - -1: handle 无效
+#[no_mangle]
+pub extern "C" fn vhisper_is_streaming(handle: *mut VhisperHandle) -> i32 {
+    if handle.is_null() {
+        return -1;
+    }
+
+    let handle = unsafe { &*handle };
+    if handle.pipeline.is_streaming() {
+        1
+    } else {
+        0
+    }
 }

@@ -1,8 +1,12 @@
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, RwLock};
+use std::time::Duration;
+use tokio::sync::mpsc;
 use tokio::sync::RwLock as TokioRwLock;
 
-use crate::asr::create_asr_service;
+use crate::asr::{
+    create_asr_service, create_streaming_asr_service, StreamingAsrEvent, StreamingControl,
+};
 use crate::audio::{encode_to_pcm, encode_to_wav, AudioRecorder};
 use crate::config::AppConfig;
 use crate::llm::create_llm_service;
@@ -44,12 +48,20 @@ impl From<u8> for PipelineState {
 pub struct VoicePipeline {
     config: Arc<TokioRwLock<AppConfig>>,
     // 使用 std::sync::RwLock，因为 AudioRecorder 的操作是同步的
-    // 这样避免了 blocking_write() 在 async 上下文中可能的问题
     recorder: Arc<RwLock<AudioRecorder>>,
-    /// 当前状态（原子操作保证线程安全）
-    state: AtomicU8,
-    /// 取消标志
-    cancelled: std::sync::atomic::AtomicBool,
+    /// 当前状态（Arc 包装以便后台任务共享）
+    state: Arc<AtomicU8>,
+    /// 取消标志（Arc 包装以便后台任务共享）
+    cancelled: Arc<AtomicBool>,
+    /// 流式模式标志（Arc 包装以便后台任务共享）
+    streaming_mode: Arc<AtomicBool>,
+    /// 流式 ASR 控制通道（用于发送音频和控制命令）
+    /// 音频发送任务从这里读取当前活跃的 control_tx
+    streaming_control_tx: Arc<TokioRwLock<Option<mpsc::Sender<StreamingControl>>>>,
+    /// 流式任务取消标志（每次会话独立，用于通知后台任务停止）
+    streaming_task_cancelled: Arc<TokioRwLock<Option<Arc<AtomicBool>>>>,
+    /// 是否应该完全停止（热键松开时设为 true，区别于 VAD Final）
+    should_stop: Arc<AtomicBool>,
 }
 
 impl VoicePipeline {
@@ -60,8 +72,12 @@ impl VoicePipeline {
         Ok(Self {
             config,
             recorder: Arc::new(RwLock::new(recorder)),
-            state: AtomicU8::new(PipelineState::Idle as u8),
-            cancelled: std::sync::atomic::AtomicBool::new(false),
+            state: Arc::new(AtomicU8::new(PipelineState::Idle as u8)),
+            cancelled: Arc::new(AtomicBool::new(false)),
+            streaming_mode: Arc::new(AtomicBool::new(false)),
+            streaming_control_tx: Arc::new(TokioRwLock::new(None)),
+            streaming_task_cancelled: Arc::new(TokioRwLock::new(None)),
+            should_stop: Arc::new(AtomicBool::new(false)),
         })
     }
 
@@ -279,5 +295,320 @@ impl VoicePipeline {
         self.state.store(PipelineState::Idle as u8, Ordering::SeqCst);
         tracing::info!("stop_and_process completed successfully");
         Ok(final_text)
+    }
+
+    // ========================================================================
+    // 流式识别方法
+    // ========================================================================
+
+    /// 清理流式会话资源
+    async fn cleanup_streaming(&self) {
+        // 设置任务取消标志
+        if let Some(task_cancelled) = self.streaming_task_cancelled.read().await.as_ref() {
+            task_cancelled.store(true, Ordering::SeqCst);
+        }
+
+        // 清理控制通道
+        {
+            let mut tx_guard = self.streaming_control_tx.write().await;
+            *tx_guard = None;
+        }
+
+        // 清理任务取消标志
+        {
+            let mut cancelled_guard = self.streaming_task_cancelled.write().await;
+            *cancelled_guard = None;
+        }
+    }
+
+    /// 开始流式录音和识别（支持连续输入模式）
+    ///
+    /// 返回事件接收器，用于接收识别结果
+    ///
+    /// 新架构特性：
+    /// - 录音持续运行，不受 ASR 会话影响
+    /// - VAD 触发 Final 后自动重连 ASR，继续接收音频
+    /// - 只有调用 stop_streaming() 才会真正停止
+    ///
+    /// 使用方式:
+    /// 1. 调用 start_streaming() 获取事件接收器
+    /// 2. 从接收器读取 StreamingAsrEvent（Partial/Final）
+    /// 3. Final 事件表示一句话结束，会自动开始新的识别
+    /// 4. 调用 stop_streaming() 完全停止
+    pub async fn start_streaming(&self) -> Result<mpsc::Receiver<StreamingAsrEvent>, PipelineError> {
+        // 先停止旧会话（如果有）
+        self.should_stop.store(true, Ordering::SeqCst);
+        if let Some(task_cancelled) = self.streaming_task_cancelled.read().await.as_ref() {
+            task_cancelled.store(true, Ordering::SeqCst);
+        }
+        {
+            let mut tx_guard = self.streaming_control_tx.write().await;
+            *tx_guard = None;
+        }
+        {
+            let mut recorder = self.recorder.write().map_err(|e| {
+                PipelineError::Other(format!("Failed to acquire recorder lock: {}", e))
+            })?;
+            let _ = recorder.stop();
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+
+        // 检查状态
+        let current = self.state.load(Ordering::SeqCst);
+        if current != PipelineState::Idle as u8 {
+            return Err(PipelineError::Other("Pipeline is busy".to_string()));
+        }
+
+        // 重置标志，开始新会话
+        self.should_stop.store(false, Ordering::SeqCst);
+        self.cancelled.store(false, Ordering::SeqCst);
+        self.streaming_mode.store(true, Ordering::SeqCst);
+
+        // 获取配置和采样率
+        let config = self.config.read().await.clone();
+        let sample_rate = {
+            let recorder = self.recorder.read().map_err(|e| {
+                PipelineError::Other(format!("Failed to acquire recorder lock: {}", e))
+            })?;
+            recorder.sample_rate()
+        };
+
+        // 创建首个 ASR 连接
+        let streaming_service = create_streaming_asr_service(&config.asr)?;
+        let (control_tx, event_rx) = streaming_service.start_streaming(sample_rate).await?;
+
+        // 保存控制通道
+        {
+            let mut tx_guard = self.streaming_control_tx.write().await;
+            *tx_guard = Some(control_tx);
+        }
+
+        // 启动录音
+        {
+            let mut recorder = self.recorder.write().map_err(|e| {
+                PipelineError::Other(format!("Failed to acquire recorder lock: {}", e))
+            })?;
+            recorder.start()?;
+        }
+
+        self.state.store(PipelineState::Recording as u8, Ordering::SeqCst);
+
+        // 创建事件转发通道
+        let (forward_tx, forward_rx) = mpsc::channel::<StreamingAsrEvent>(32);
+
+        // === 音频发送任务 ===
+        // 持续运行，从 streaming_control_tx 读取当前活跃的 control_tx
+        let recorder = self.recorder.clone();
+        let should_stop_for_audio = self.should_stop.clone();
+        let control_tx_holder = self.streaming_control_tx.clone();
+
+        tokio::spawn(async move {
+            let chunk_interval = Duration::from_millis(50);
+
+            loop {
+                // 检查是否应该停止
+                if should_stop_for_audio.load(Ordering::SeqCst) {
+                    tracing::info!("Audio task stopping: should_stop=true");
+                    break;
+                }
+
+                // 获取音频数据
+                let samples = {
+                    let recorder_guard = match recorder.read() {
+                        Ok(r) => r,
+                        Err(_) => break,
+                    };
+                    recorder_guard.drain_buffer()
+                };
+
+                // 发送到当前活跃的 ASR 连接
+                if !samples.is_empty() {
+                    let pcm_data = encode_to_pcm(&samples);
+                    if let Some(tx) = control_tx_holder.read().await.as_ref() {
+                        // 忽略发送错误（ASR 可能在重连中）
+                        let _ = tx.send(StreamingControl::Audio(pcm_data)).await;
+                    }
+                }
+
+                tokio::time::sleep(chunk_interval).await;
+            }
+        });
+
+        // === ASR 会话管理任务 ===
+        // Final 后自动重连，直到 should_stop 为 true
+        let should_stop_for_asr = self.should_stop.clone();
+        let control_tx_holder_for_asr = self.streaming_control_tx.clone();
+        let state = self.state.clone();
+        let streaming_mode = self.streaming_mode.clone();
+        let config_for_asr = config.clone();
+
+        tokio::spawn(async move {
+            let mut current_event_rx = event_rx;
+
+            loop {
+                // 处理当前 ASR 连接的事件
+                // 注意：不在这里检查 should_stop，必须等到 Final/Error 才能退出
+                while let Some(event) = current_event_rx.recv().await {
+                    let is_final = matches!(event, StreamingAsrEvent::Final { .. });
+                    let is_error = matches!(event, StreamingAsrEvent::Error(_));
+
+                    // 转发事件
+                    if forward_tx.send(event).await.is_err() {
+                        tracing::info!("ASR task stopping: forward channel closed");
+                        return;
+                    }
+
+                    // Final 事件：检查是否应该重连
+                    if is_final {
+                        if should_stop_for_asr.load(Ordering::SeqCst) {
+                            // 热键已松开，不再重连，正常退出
+                            tracing::info!("Final received, should_stop=true, stopping");
+                            state.store(PipelineState::Idle as u8, Ordering::SeqCst);
+                            streaming_mode.store(false, Ordering::SeqCst);
+                            return;
+                        } else {
+                            // 热键还按着，VAD Final，自动重连
+                            tracing::info!("VAD Final received, reconnecting ASR...");
+                            break; // 跳出内层循环，重新创建 ASR 连接
+                        }
+                    }
+
+                    // 错误：停止
+                    if is_error {
+                        tracing::error!("ASR error, stopping");
+                        state.store(PipelineState::Idle as u8, Ordering::SeqCst);
+                        streaming_mode.store(false, Ordering::SeqCst);
+                        return;
+                    }
+                }
+
+                // 内层循环因为 channel 关闭而退出（不是因为 Final）
+                // 检查是否应该停止
+                if should_stop_for_asr.load(Ordering::SeqCst) {
+                    tracing::info!("ASR task stopping: channel closed, should_stop=true");
+                    state.store(PipelineState::Idle as u8, Ordering::SeqCst);
+                    streaming_mode.store(false, Ordering::SeqCst);
+                    return;
+                }
+
+                // 重新创建 ASR 连接
+                tracing::info!("Creating new ASR connection...");
+                let new_service = match create_streaming_asr_service(&config_for_asr.asr) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        tracing::error!("Failed to create ASR service: {}", e);
+                        state.store(PipelineState::Idle as u8, Ordering::SeqCst);
+                        streaming_mode.store(false, Ordering::SeqCst);
+                        return;
+                    }
+                };
+
+                let (new_control_tx, new_event_rx) = match new_service.start_streaming(sample_rate).await {
+                    Ok(r) => r,
+                    Err(e) => {
+                        tracing::error!("Failed to start ASR streaming: {}", e);
+                        state.store(PipelineState::Idle as u8, Ordering::SeqCst);
+                        streaming_mode.store(false, Ordering::SeqCst);
+                        return;
+                    }
+                };
+
+                // 更新共享的 control_tx（音频发送任务会自动使用新的）
+                {
+                    let mut tx_guard = control_tx_holder_for_asr.write().await;
+                    *tx_guard = Some(new_control_tx);
+                }
+
+                current_event_rx = new_event_rx;
+                tracing::info!("ASR reconnected successfully");
+            }
+        });
+
+        Ok(forward_rx)
+    }
+
+    /// 停止流式录音（真正停止，不再自动重连）
+    ///
+    /// 提交当前音频缓冲区，等待最终识别结果
+    pub async fn stop_streaming(&self) -> Result<(), PipelineError> {
+        // 检查是否在流式模式
+        if !self.streaming_mode.load(Ordering::SeqCst) {
+            return Ok(());
+        }
+
+        tracing::info!("stop_streaming: setting should_stop=true");
+
+        // 设置停止标志，通知后台任务停止
+        self.should_stop.store(true, Ordering::SeqCst);
+
+        // 停止录音
+        {
+            let mut recorder = self.recorder.write().map_err(|e| {
+                PipelineError::Other(format!("Failed to acquire recorder lock: {}", e))
+            })?;
+            let _ = recorder.stop();
+        }
+
+        // 发送最后一批音频和 commit
+        if let Some(control_tx) = self.streaming_control_tx.read().await.as_ref() {
+            // 获取剩余音频
+            let samples = {
+                let recorder = self.recorder.read().map_err(|e| {
+                    PipelineError::Other(format!("Failed to acquire recorder lock: {}", e))
+                })?;
+                recorder.drain_buffer()
+            };
+
+            if !samples.is_empty() {
+                let pcm_data = encode_to_pcm(&samples);
+                let _ = control_tx.send(StreamingControl::Audio(pcm_data)).await;
+            }
+
+            // 提交
+            let _ = control_tx.send(StreamingControl::Commit).await;
+        }
+
+        self.state.store(PipelineState::Processing as u8, Ordering::SeqCst);
+
+        Ok(())
+    }
+
+    /// 取消流式识别（立即停止，不提交）
+    pub async fn cancel_streaming(&self) -> Result<(), PipelineError> {
+        if !self.streaming_mode.load(Ordering::SeqCst) {
+            return Ok(());
+        }
+
+        tracing::info!("cancel_streaming: setting should_stop=true");
+
+        // 设置停止标志
+        self.should_stop.store(true, Ordering::SeqCst);
+
+        // 停止录音
+        {
+            let mut recorder = self.recorder.write().map_err(|e| {
+                PipelineError::Other(format!("Failed to acquire recorder lock: {}", e))
+            })?;
+            let _ = recorder.stop();
+        }
+
+        // 发送取消命令
+        if let Some(control_tx) = self.streaming_control_tx.read().await.as_ref() {
+            let _ = control_tx.send(StreamingControl::Cancel).await;
+        }
+
+        // 清理所有资源
+        self.cleanup_streaming().await;
+
+        self.streaming_mode.store(false, Ordering::SeqCst);
+        self.cancelled.store(true, Ordering::SeqCst);
+        self.state.store(PipelineState::Idle as u8, Ordering::SeqCst);
+
+        Ok(())
+    }
+
+    /// 是否在流式模式
+    pub fn is_streaming(&self) -> bool {
+        self.streaming_mode.load(Ordering::SeqCst)
     }
 }

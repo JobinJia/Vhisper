@@ -25,6 +25,25 @@ typedef struct VhisperHandle VhisperHandle;
 /// @param error 失败时的错误信息（UTF-8），成功时为 NULL
 typedef void (*VhisperResultCallback)(void *context, const char *text, const char *error);
 
+/// 流式识别事件类型
+typedef enum {
+    VHISPER_EVENT_PARTIAL = 0,  // 中间结果
+    VHISPER_EVENT_FINAL = 1,    // 最终结果
+    VHISPER_EVENT_ERROR = 2     // 错误
+} VhisperStreamingEventType;
+
+/// 流式识别回调函数
+/// @param context 用户传入的上下文指针
+/// @param event_type 事件类型
+/// @param text 已确认的文本（UTF-8），可能为 NULL
+/// @param stash 暂定文本（UTF-8），仅 Partial 事件有效，其他为 NULL
+/// @param error 错误信息（UTF-8），仅 Error 事件有效，其他为 NULL
+typedef void (*VhisperStreamingCallback)(void *context,
+                                          int32_t event_type,
+                                          const char *text,
+                                          const char *stash,
+                                          const char *error);
+
 // ============================================================================
 // 生命周期
 // ============================================================================
@@ -69,6 +88,37 @@ int32_t vhisper_stop_recording(VhisperHandle *handle,
 /// @param handle Vhisper 实例
 /// @return 0=成功, -1=handle无效, -2=取消失败
 int32_t vhisper_cancel(VhisperHandle *handle);
+
+// ============================================================================
+// 流式识别
+// ============================================================================
+
+/// 开始流式录音和识别
+/// 立即返回，识别结果通过回调持续通知
+/// @param handle Vhisper 实例
+/// @param callback 流式事件回调函数
+/// @param context 传递给回调的用户上下文
+/// @return 0=成功启动, -1=handle无效, -2=启动失败
+int32_t vhisper_start_streaming(VhisperHandle *handle,
+                                 VhisperStreamingCallback callback,
+                                 void *context);
+
+/// 停止流式录音
+/// 提交当前音频缓冲区，回调会收到 Final 事件
+/// @param handle Vhisper 实例
+/// @return 0=成功, -1=handle无效
+int32_t vhisper_stop_streaming(VhisperHandle *handle);
+
+/// 取消流式识别
+/// 停止录音并丢弃数据，不会触发 Final 回调
+/// @param handle Vhisper 实例
+/// @return 0=成功, -1=handle无效
+int32_t vhisper_cancel_streaming(VhisperHandle *handle);
+
+/// 检查是否在流式模式
+/// @param handle Vhisper 实例
+/// @return 1=流式模式, 0=非流式模式, -1=handle无效
+int32_t vhisper_is_streaming(VhisperHandle *handle);
 
 // ============================================================================
 // 配置
